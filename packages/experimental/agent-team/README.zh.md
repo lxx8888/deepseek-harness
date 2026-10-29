@@ -52,6 +52,7 @@ kind: "package-reference"
 | `maxTasks` | `256` | 任务板上最多的活动任务数 |
 | `maxMessageBytes` | `65,536` | 单条发送消息的最大尺寸 |
 | `disposalTimeoutMs` | `5,000` | 关闭清理允许的时间 |
+| `displayNames` | `{}` | 显示标签，按 durable member name 索引 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-experimental-agent-team)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
@@ -60,6 +61,8 @@ kind: "package-reference"
 请 Lead 创建 teammate：给它一个唯一的小写名字（例如 `reviewer`）并描述其职责。teammate 可以 fresh 启动（不携带 Lead 对话的任何记忆），也可以作为 fork 启动（继承 Lead 已完成的轮次）；创建请求决定用哪种。teammate 名字是永久的——即使创建失败的 teammate 也保留其名字，任何名字都不会被复用。
 
 roster 显示每个成员的职责（`lead` 或 `teammate`）与当前状态：`running`、`inactive`（当前没有执行轮次，包括已加载和仅存储的成员）、`provisioning` 或 `failed`。未加载的成员会在唤醒后收到其消息。
+
+成员名是**寻址键**，保持 lower-kebab-case。部署可以通过 `displayNames` 给每个名字配一个显示标签：roster 行、面向模型的 roster 结果与浏览器面板会显示该标签，而 `send_message`、任务 owner 与面板导航仍按 durable name 寻址。
 
 只有 Lead 可以创建 teammate 或中断它们。
 

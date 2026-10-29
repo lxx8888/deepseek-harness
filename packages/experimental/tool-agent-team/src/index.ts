@@ -54,6 +54,7 @@ const MEMBER_VIEW_SCHEMA = {
   additionalProperties: false,
   properties: {
     target: { type: 'string', required: true },
+    displayName: { type: 'string' },
     role: { type: 'string', required: true, enum: ['lead', 'teammate'] },
     status: { type: 'string', required: true, enum: ['running', 'inactive', 'provisioning', 'failed'] },
     description: { type: 'string' },
@@ -64,7 +65,13 @@ const MEMBER_VIEW_SCHEMA = {
   },
 } as const
 
-/** Expose the member name as its model-facing target. */
+/**
+ * Expose the member name as its model-facing target and keep the deployment
+ * display label beside it, so the model can address members by `target` while
+ * naming them in prose.
+ * @param member - roster row returned by the Team service.
+ * @returns the model-facing roster row.
+ */
 function modelMember(member: TeamMemberView): InferValue<typeof MEMBER_VIEW_SCHEMA> {
   const { id: _id, name, ...details } = member
   return { target: name, ...details }

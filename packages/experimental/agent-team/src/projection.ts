@@ -306,6 +306,7 @@ function applyCurrentTeamEvent(state: TeamProjectionState, event: TeamSessionEve
 const teamMemberProjectionSchema = z.object({
   id: sessionIdSchema,
   name: z.string(),
+  displayName: z.string().optional(),
   role: z.enum(['lead', 'teammate']),
   phase: z.enum(['provisioning', 'active', 'failed']),
   error: z.string().optional(),
@@ -330,16 +331,30 @@ const teamProjectionSchema = z.object({
   failure: z.string().optional(),
 }).strict() as z.ZodType<TeamProjection>
 
-/** Client views keyed by the member and task collections they were derived from. */
-const teamProjectionViews = new WeakMap<readonly TeamMemberSnapshot[], WeakMap<readonly TeamTaskSnapshot[], TeamProjection>>()
+/** Deployment labels applied to roster rows, keyed by durable member name. */
+export type TeamDisplayNames = ReadonlyMap<string, string>
 
-function buildTeamProjection(state: TeamProjectionState): TeamProjection {
+/** Resolve one member's display label, omitted when the deployment configures none. */
+function displayNameOf(displayNames: TeamDisplayNames, name: string): { displayName?: string } {
+  const displayName = displayNames.get(name)
+  return displayName === undefined ? {} : { displayName }
+}
+
+/** Client views keyed by the member and task collections they were derived from. */
+function buildTeamProjection(state: TeamProjectionState, displayNames: TeamDisplayNames): TeamProjection {
   const rootId = brandString<SessionId>(state.id)
-  const members: TeamMemberProjection[] = [{ id: rootId, name: 'lead', role: 'lead', phase: 'active' }]
+  const members: TeamMemberProjection[] = [{
+    id: rootId,
+    name: 'lead',
+    ...displayNameOf(displayNames, 'lead'),
+    role: 'lead',
+    phase: 'active',
+  }]
   for (const member of state.members) {
     members.push({
       id: member.id,
       name: member.name,
+      ...displayNameOf(displayNames, member.name),
       role: 'teammate',
       phase: member.phase,
       ...member.error === undefined ? {} : { error: member.error },
@@ -354,35 +369,47 @@ function buildTeamProjection(state: TeamProjectionState): TeamProjection {
   }
 }
 
+/** Team projection without deployment display labels. */
+export const teamProjectionDefinition = createTeamProjectionDefinition(new Map())
+
 /**
- * Durable client view of one Team state. Mailbox-only state changes reuse the
- * previous view reference, so the live drive publishes nothing for them.
- * A failure is terminal: later events retain the failed state reference and
- * do not republish its view.
+ * Durable client view of one Team state, without deployment display labels.
  * @param state - current Team state.
  * @returns the roster and non-deleted task board, plus any projection failure.
  */
 export function teamProjectionView(state: TeamProjectionState): TeamProjection {
-  if (state.failure !== undefined) return buildTeamProjection(state)
-  let byTasks = teamProjectionViews.get(state.members)
-  if (byTasks === undefined) {
-    byTasks = new WeakMap()
-    teamProjectionViews.set(state.members, byTasks)
-  }
-  let view = byTasks.get(state.tasks)
-  if (view === undefined) {
-    view = buildTeamProjection(state)
-    byTasks.set(state.tasks, view)
-  }
-  return view
+  return teamProjectionDefinition.wire.view(state)
 }
 
-/** Team projection selected by the projected Session identity; the wire view carries durable roster and task state only. */
-export const teamProjectionDefinition = {
-  key: 'agentTeam',
-  stateVersion: 4,
-  stateSchema: teamProjectionEntrySchema,
-  init: header => emptyTeamState(header.id),
-  apply: applyProjectionEvent,
-  wire: { viewSchema: teamProjectionSchema, view: teamProjectionView },
-} satisfies ProjectionDefinition<'agentTeam', TeamProjectionState>
+/**
+ * Create the Team projection definition for one deployment's display labels.
+ * The label map is bound to the definition, so each definition memoizes its
+ * own views and a deployment change cannot reuse another deployment's labels.
+ * @param displayNames - deployment labels keyed by durable member name.
+ * @returns the Team projection definition used by the Team service.
+ */
+export function createTeamProjectionDefinition(displayNames: TeamDisplayNames) {
+  const views = new WeakMap<readonly TeamMemberSnapshot[], WeakMap<readonly TeamTaskSnapshot[], TeamProjection>>()
+  const view = (state: TeamProjectionState): TeamProjection => {
+    if (state.failure !== undefined) return buildTeamProjection(state, displayNames)
+    let byTasks = views.get(state.members)
+    if (byTasks === undefined) {
+      byTasks = new WeakMap()
+      views.set(state.members, byTasks)
+    }
+    let result = byTasks.get(state.tasks)
+    if (result === undefined) {
+      result = buildTeamProjection(state, displayNames)
+      byTasks.set(state.tasks, result)
+    }
+    return result
+  }
+  return {
+    key: 'agentTeam',
+    stateVersion: 4,
+    stateSchema: teamProjectionEntrySchema,
+    init: header => emptyTeamState(header.id),
+    apply: applyProjectionEvent,
+    wire: { viewSchema: teamProjectionSchema, view },
+  } satisfies ProjectionDefinition<'agentTeam', TeamProjectionState>
+}

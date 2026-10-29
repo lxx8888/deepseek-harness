@@ -84,12 +84,16 @@ Lead Session 通过 `SessionProjectionMap.agentTeam` 发布持久 roster 行与�
 interface TeamMemberProjection {
   readonly id: SessionId
   readonly name: string
+  /** Deployment label for the member; absent when no display name is configured for its name. */
+  readonly displayName?: string
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
   readonly error?: string
 }
 ```
+
+部署可以通过 Team 服务的 `displayNames` 配置给每个 durable member name 挂一个显示标签。durable name 仍是消息、任务 owner 与导航的寻址键；标签是 roster 视图、面向模型的 roster 结果与浏览器客户端显示的内容。标签属于部署配置，不进入持久 Team 日志，也不改变投影的持久状态。
 
 ```ts type-equiv
 /** Runtime-enriched task view returned to tools and hosts. */

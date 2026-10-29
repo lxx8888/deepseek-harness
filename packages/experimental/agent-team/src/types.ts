@@ -59,6 +59,8 @@ export interface TeamMemberSnapshot {
 export interface TeamMemberView {
   readonly id: SessionId
   readonly name: string
+  /** Deployment label for the member; absent when no display name is configured for its name. */
+  readonly displayName?: string
   readonly role: 'lead' | 'teammate'
   readonly status: 'running' | 'inactive' | 'provisioning' | 'failed'
   readonly description?: string
@@ -101,6 +103,8 @@ export interface TeamTaskView {
 export interface TeamMemberProjection {
   readonly id: SessionId
   readonly name: string
+  /** Deployment label for the member; absent when no display name is configured for its name. */
+  readonly displayName?: string
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
@@ -159,6 +163,11 @@ export interface Config {
   readonly maxMessageBytes?: number
   /** Maximum milliseconds for shared operation settlement and for each Team child drain. */
   readonly disposalTimeoutMs?: number
+  /**
+   * Display labels keyed by durable member name. The durable name stays the
+   * addressing key; the label is what roster views and clients display.
+   */
+  readonly displayNames?: Readonly<Record<string, string>>
 }
 
 /** Input for creating one durable teammate. */

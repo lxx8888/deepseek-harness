@@ -10,11 +10,12 @@ import { TeamActivity } from './activity.ts'
 import { errorMessage, TeamError } from './error.ts'
 import { TeamJournal } from './journal.ts'
 import { TeamRuntimeLifecycle } from './lifecycle.ts'
-import { teamProjectionDefinition } from './projection.ts'
+import { createTeamProjectionDefinition } from './projection.ts'
 import { resolveActiveMember, TeamRoster } from './roster.ts'
 import type { TeamMembership } from './roster.ts'
 import { TeamTaskBoard } from './task-board.ts'
 import { TeamId, TeamTaskId } from './types.ts'
+import { displayNameMap } from './validation.ts'
 import type {
   Config,
   CreateTeamTaskRequest,
@@ -61,10 +62,14 @@ export class TeamService extends Service {
     maxTasks: z.number().step(1).min(1).default(DEFAULT_MAX_TASKS),
     maxMessageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_MESSAGE_BYTES),
     disposalTimeoutMs: z.number().step(1).min(1).default(DEFAULT_DISPOSAL_TIMEOUT_MS),
+    displayNames: z.dict(z.string(), z.string()).default({}),
   })
 
   /** Validated deployment limits used by every Team operation. */
   private readonly config: Required<Config>
+
+  /** Deployment labels keyed by durable member name. */
+  private readonly displayNames: ReadonlyMap<string, string>
 
   private readonly activity: TeamActivity
   private readonly lifecycle: TeamRuntimeLifecycle
@@ -82,7 +87,9 @@ export class TeamService extends Service {
         'disposalTimeoutMs',
         config.disposalTimeoutMs ?? DEFAULT_DISPOSAL_TIMEOUT_MS,
       ),
+      displayNames: config.displayNames ?? {},
     }
+    this.displayNames = displayNameMap(this.config.displayNames)
 
     this.activity = new TeamActivity()
     this.lifecycle = new TeamRuntimeLifecycle(this.config.disposalTimeoutMs)
@@ -90,9 +97,11 @@ export class TeamService extends Service {
 
   protected async [Service.init](): Promise<void> {
     const ctx = this.ctx
-    const teamProjectionHandle = await ctx.sessionProjections.register(teamProjectionDefinition)
+    const teamProjectionHandle = await ctx.sessionProjections.register(
+      createTeamProjectionDefinition(this.displayNames),
+    )
     this.journal = new TeamJournal(ctx, teamProjectionHandle, (root) => { this.activity.notify(TeamId(root.id)) })
-    this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.config.maxMembers)
+    this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.config.maxMembers, this.displayNames)
     this.tasks = new TeamTaskBoard(this.journal, this.config.maxTasks)
     ctx.effect(() => () => this.disposeRuntime(), 'agentTeams.runtimeLifecycle()')
 

@@ -52,6 +52,7 @@ With the tools installed, the model does the rest on request — for example, "c
 | `maxTasks` | `256` | Maximum active tasks on the board |
 | `maxMessageBytes` | `65,536` | Maximum size of one sent message |
 | `disposalTimeoutMs` | `5,000` | Time allowed for shutdown cleanup |
+| `displayNames` | `{}` | Display labels keyed by durable member name |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-experimental-agent-team) is the exhaustive source for every accepted field and its JSDoc.
 
@@ -60,6 +61,8 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 Ask the Lead to create a teammate: give it a unique lowercase name such as `reviewer` and describe its job. A teammate starts fresh with no memory of the Lead's conversation, or as a fork that inherits the Lead's completed turns; the creation request chooses which. Teammate names are permanent — even a teammate whose creation failed keeps its name, and no name is ever reused.
 
 The roster shows every member with its role (`lead` or `teammate`) and current status: `running`, `inactive` (no turn is executing, whether loaded or stored), `provisioning`, or `failed`. A member that is not loaded receives its messages when it wakes.
+
+Member names are durable addressing keys and stay lowercase kebab-case. A deployment can attach a display label to each name through `displayNames`; roster rows, model-facing roster results, and browser clients then show that label next to the durable name, while `send_message`, task ownership, and the Web panel's navigation keep addressing members by the durable name.
 
 Only the Lead can create teammates or interrupt them.
 

@@ -110,7 +110,7 @@ function TeamMemberRow({
         </span>
         <span className={css.memberText}>
           <span className={css.memberName}>
-            <span className={css.memberNameText}>{member.name}</span>
+            <span className={css.memberNameText}>{member.displayName ?? member.name}</span>
             {isCurrent && <Tag tone="info" className={css.currentTag}>{t('current')}</Tag>}
           </span>
           <small>

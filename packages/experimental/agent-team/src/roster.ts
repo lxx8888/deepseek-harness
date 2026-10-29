@@ -20,9 +20,7 @@ import type {
   TeamMemberSnapshot,
   TeamMemberView,
 } from './types.ts'
-import { requiredText } from './validation.ts'
-
-const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
+import { MEMBER_NAME_PATTERN, requiredText } from './validation.ts'
 
 /** Caller identity inside one implicit Team. */
 export interface TeamMembership {
@@ -60,12 +58,14 @@ export class TeamRoster {
    * @param journal - authoritative Lead-log transaction owner.
    * @param lifecycle - shared Team runtime admission cutoff.
    * @param maxMembers - maximum immutable roster entries per Team.
+   * @param displayNames - deployment labels keyed by durable member name.
    */
   constructor(
     private readonly ctx: Context,
     private readonly journal: TeamJournal,
     private readonly lifecycle: TeamRuntimeLifecycle,
     private readonly maxMembers: number,
+    private readonly displayNames: ReadonlyMap<string, string>,
   ) {}
 
   /**
@@ -126,9 +126,11 @@ export class TeamRoster {
   list(membership: TeamMembership): TeamMemberView[] {
     const { root } = membership
     const state = this.journal.state(root)
+    const leadDisplayName = this.displayNames.get('lead')
     const result: TeamMemberView[] = [{
       id: root.id,
       name: 'lead',
+      ...leadDisplayName === undefined ? {} : { displayName: leadDisplayName },
       role: 'lead',
       status: availability(root),
       ...root.options.model === undefined ? {} : { model: root.options.model },
@@ -137,9 +139,11 @@ export class TeamRoster {
     for (const member of state.members) {
       const live = this.ctx.agents.get(member.id)
       const model = live?.options.model ?? root.options.model
+      const displayName = this.displayNames.get(member.name)
       result.push({
         id: member.id,
         name: member.name,
+        ...displayName === undefined ? {} : { displayName },
         role: 'teammate',
         status: member.phase === 'failed'
           ? 'failed'
@@ -434,7 +438,7 @@ export class TeamRoster {
 
   /** Validate a never-reused model-facing teammate name. */
   private memberName(value: string): string {
-    if (!MEMBER_NAME.test(value) || value.length > 64 || value === 'lead') {
+    if (!MEMBER_NAME_PATTERN.test(value) || value.length > 64 || value === 'lead') {
       throw new TeamError(
         'teammate name must be lower-kebab-case, at most 64 characters, and not "lead"',
         'TEAM_INVALID_MEMBER_NAME',

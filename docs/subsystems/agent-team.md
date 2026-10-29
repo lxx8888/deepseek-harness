@@ -84,12 +84,16 @@ The Lead Session publishes `SessionProjectionMap.agentTeam` with durable roster 
 interface TeamMemberProjection {
   readonly id: SessionId
   readonly name: string
+  /** Deployment label for the member; absent when no display name is configured for its name. */
+  readonly displayName?: string
   readonly role: 'lead' | 'teammate'
   /** Durable lifecycle; the Lead row is always `active`. Turn activity comes from Session status. */
   readonly phase: TeamMemberPhase
   readonly error?: string
 }
 ```
+
+A deployment may attach a display label to each durable member name through the Team service's `displayNames` configuration. The durable name stays the addressing key for messages, task ownership, and navigation; the label is what roster views, model-facing roster results, and browser clients display. The label is deployment configuration, so it is not part of the durable Team log and does not change the projection's persisted state.
 
 ```ts type-equiv
 /** Runtime-enriched task view returned to tools and hosts. */

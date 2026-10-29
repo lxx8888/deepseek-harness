@@ -47,3 +47,5 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
+# dsh-purge 本地备份（不入库）
+*.dshpurge.bak
