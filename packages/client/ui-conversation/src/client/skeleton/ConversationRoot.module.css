@@ -320,9 +320,6 @@
 .viewsMoreMenu {
   width: 288px;
   max-width: calc(100vw - 24px);
-  /* 本地修正：非 portal 渲染时贴按钮右缘向左展开（默认 .list 是 left:0 向右） */
-  left: auto;
-  right: 0;
 }
 
 .viewArea {
