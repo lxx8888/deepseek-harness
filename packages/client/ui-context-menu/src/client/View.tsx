@@ -51,6 +51,9 @@ export function MenuOverlay({ useStore, actions, renderSlot, close, select, retu
       submenuBackLabel={t('back')} isExternalTrigger={isContextMenuTrigger}
       exiting={closing ? replacing ? 'replace' : 'dismiss' : undefined}
       anchorPoint={point}
+      // 锚点自带对齐边：按钮型触发的菜单在右半屏右对齐（卡片向左展开），手势触发的
+      // 右键菜单没有 align，仍按 start 从光标向右展开。
+      align={point.align ?? 'start'}
       items={menuEntries(items.filter(item => !item.afterContent), catalog, renderSlot)}
       footer={menuEntries(items.filter(item => item.afterContent), catalog, renderSlot)} onClose={close} onSelect={select}>
       {target !== null && renderSlot('contextMenu.content', { target, dismiss: close }, { entryKey: target.kind })}

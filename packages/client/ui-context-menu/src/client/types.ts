@@ -54,7 +54,18 @@ export interface ContextMenuButtonProps {
 }
 
 /** Pointer position in CSS pixels; keyboard gestures use the trigger's bottom edge. */
-export interface MenuPoint { readonly x: number; readonly y: number }
+export interface MenuPoint {
+  readonly x: number
+  readonly y: number
+  /**
+   * Which edge of the anchor the card hangs from. `end` makes the card's right
+   * edge meet the anchor's right edge, which is the only way a trigger near the
+   * viewport's right edge keeps its menu on screen: with `start` the card grows
+   * eastward from the anchor, overflows, and falls back to the window's left
+   * margin (the "menu opened at the far left" symptom). Omitted means `start`.
+   */
+  readonly align?: 'start' | 'end'
+}
 /** Keyed icon renderer and optional image URL captured with the action. */
 export interface ContextMenuIcon {
   readonly key: string

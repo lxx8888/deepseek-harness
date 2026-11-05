@@ -43,12 +43,13 @@ export function ContextMenuButton({ target, label, className, size, useOpener, u
       event.stopPropagation()
       event.currentTarget.focus({ preventScroll: true })
       const rect = event.currentTarget.getBoundingClientRect()
-      // 本地修正（2026-11-05）：会话头部「…」在右缘，以 rect.left 作锚点时菜单放不下，
-      // 会回落到视口左侧 12px（现象：popup 弹到内容区最左）。把锚点横向坐标夹到
-      // 「菜单至少放得下 MENU_MIN_WIDTH」的范围内，菜单就会贴在按钮下方而不是跑到左边。
-      const MENU_MIN_WIDTH = 300
-      const maxLeft = Math.max(12, window.innerWidth - MENU_MIN_WIDTH)
-      toggle(id, target, { x: Math.min(rect.left, maxLeft), y: rect.bottom })
+      // 本地修正（2026-11-05 续）：锚点 x 硬夹到 innerWidth-300 只是把溢出挪到别处，
+      // 菜单宽度未知时依然会触发 position-try-fallbacks 回落到视口左侧。真正的判据是
+      // 「卡片从锚点的哪一边展开」：触发器在右半屏就必须右对齐（align: end，卡片右缘
+      // 贴按钮右缘向左展开），左半屏保持左对齐。这样两侧都不会溢出，也不需要猜宽度。
+      const align = rect.left + rect.width / 2 > window.innerWidth / 2 ? 'end' as const : 'start' as const
+      const x = align === 'end' ? rect.right : rect.left
+      toggle(id, target, { x, y: rect.bottom, align })
     },
   }
   return <Tooltip label={label} side="bottom" align="end" portal>

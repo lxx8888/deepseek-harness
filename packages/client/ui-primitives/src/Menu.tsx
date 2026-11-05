@@ -153,7 +153,7 @@ export function MenuItemButton({ onSelect, ...props }: MenuItemButtonProps) {
  * document.body outside the owner's DOM subtree.
  * @returns anchor wrapper with the conditional list.
  */
-export function Menu({ open, anchor, items = [], children, submenuBackLabel, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, autoFocus = false, selection = 'check', anchorRef, anchorPoint, minWidthFromAnchor = false, footer, className, listClassName, contextual = false, exiting, returnFocus, isExternalTrigger }: {
+export function Menu({ open, anchor, items = [], children, submenuBackLabel, selectedId, selectedIds, onSelect, onClose, align = 'start', side = 'bottom', portal = false, closeOnPointerLeave = false, dense = false, compact = false, autoFocus = false, selection = 'check', anchorRef, anchorPoint, getAnchorRect, minWidthFromAnchor = false, footer, className, listClassName, contextual = false, exiting, returnFocus, isExternalTrigger }: {
   open: boolean
   /** Pointer-positioned popup: cursor clearance, grouped icons, and context gestures. */
   contextual?: boolean
@@ -184,6 +184,13 @@ export function Menu({ open, anchor, items = [], children, submenuBackLabel, sel
   anchorRef?: RefObject<HTMLElement | null> | undefined
   /** Client coordinates captured for this opening; Safari offsets are applied once. */
   anchorPoint?: { readonly x: number; readonly y: number } | undefined
+  /**
+   * 兼容旧插件契约（本地追加 2026-11-05）：升级到 0.2.2-rc.1 后这个方法从 Menu 上消失了，
+   * 而 dsh-better-sidebar 等第三方插件仍靠它交出「右键光标位置」的矩形。prop 被忽略时，
+   * 锚点退化成它顺手传进来的那个空 `anchor` 元素，菜单于是离开光标（实测落在内容区最左）。
+   * 恢复它：没有 anchorPoint 时用矩形右下角当锚点。
+   */
+  getAnchorRect?: (() => DOMRect | null | undefined) | undefined
   minWidthFromAnchor?: boolean
   className?: string | undefined
   listClassName?: string | undefined
@@ -193,15 +200,22 @@ export function Menu({ open, anchor, items = [], children, submenuBackLabel, sel
   const menuId = useId()
   const pointX = anchorPoint?.x
   const pointY = anchorPoint?.y
+  // 旧契约的矩形只在打开期间取一次；anchorPoint 优先。
+  const legacyRect = useMemo(
+    () => (open && getAnchorRect !== undefined ? getAnchorRect() ?? undefined : undefined),
+    [open, getAnchorRect],
+  )
   const point = useMemo(() => {
-    if (pointX === undefined || pointY === undefined) return undefined
+    const px = pointX ?? legacyRect?.left
+    const py = pointY ?? legacyRect?.bottom
+    if (px === undefined || py === undefined) return undefined
     // WebKit reports client coordinates from the visual origin; fixed CSS uses
     // the layout origin. Subsequent panning must not move this captured point.
     const visualOrigin = open && typeof window.CSS !== 'undefined'
       && window.CSS.supports('-webkit-backdrop-filter', 'none')
     const viewport = visualOrigin ? window.visualViewport : undefined
-    return { x: pointX + (viewport?.offsetLeft ?? 0), y: pointY + (viewport?.offsetTop ?? 0) }
-  }, [open, pointX, pointY])
+    return { x: px + (viewport?.offsetLeft ?? 0), y: py + (viewport?.offsetTop ?? 0) }
+  }, [open, pointX, pointY, legacyRect])
   useLayoutEffect(() => {
     const trigger = returnFocus?.()
     if (!open || !contextual || trigger == null) return
@@ -265,6 +279,70 @@ export function Menu({ open, anchor, items = [], children, submenuBackLabel, sel
   const close = useRef(onClose)
   close.current = onClose
   const anchorName = `--dsh-menu-trigger-${menuId.replaceAll(':', '')}`
+  /**
+   * 右缘锚点的自动翻转（本地修正 2026-11-05）。
+   *
+   * `align="start"` 让卡片从锚点向东展开；锚点落在视口右半时必然溢出，
+   * `position-try-fallbacks` 于是挑到 `--dsh-menu-wide-*` 那组规则，而那组规则靠
+   * `justify-self` 做右对齐——它们的 `.portal` 是 `position-area: none` 的 fixed 元素，
+   * `justify-self` 不参与这种元素的定位，over-constrained 的 `left: 12px` 胜出，卡片
+   * 整个跳到内容区最左（右侧栏插件右键菜单的典型症状）。
+   *
+   * 这里在打开时量一次锚点横坐标，越过中线就把对齐边换成 `end`：CSS 走
+   * `right: max(12px, anchor(right))`，卡片右缘贴住锚点向左展开，不再让位到左边。
+   * 调用方显式给了 `end` 的保持原样；量不到锚点时按调用方的选择走。
+   */
+  const [crossedMidline, setCrossedMidline] = useState(false)
+  /** 重试计数：卡片在数据到达前宽度为 0，推一帧后靠它重新进入定位 effect。 */
+  const [positionTick, setPositionTick] = useState(0)
+  useLayoutEffect(() => {
+    if (!open || !portal) { setCrossedMidline(false); return }
+    const element = anchorRef?.current ?? rootRef.current
+    const x = point?.x ?? element?.getBoundingClientRect().right
+    setCrossedMidline(x !== undefined && x > window.innerWidth / 2)
+  }, [open, portal, point, anchorRef])
+  const resolvedAlign = crossedMidline && align === 'start' ? 'end' as const : align
+  /**
+   * 显式锚点坐标的最终兜底（本地修正 2026-11-05 之二）。
+   *
+   * 上方那次翻转仍然把定位交给 CSS `anchor()`：卡片的位置由「锚点元素」的位置算出来。
+   * 而锚点那个 0 宽 span 是插在调用方 DOM 里的，调用方一旦是带 transform / contain 的
+   * 面板（右侧栏就是），span 的坐标系就成了面板自己的坐标，`anchor()` 于是算出一个面板
+   * 内的小数字，卡片被钉在内容区最左——正是右侧栏右键菜单的症状，且在外部无法验证。
+   *
+   * 这里整条绕开：卡片本来就 portal 挂到 body 下，没有 transform 祖先，
+   * 直接把量好的视口坐标以内联样式写死，并把 anchor 那套的 right/bottom 一起清掉。
+   * 夹取保证不出视口：横向按对齐边摆，纵向放不下就翻到锚点上方。
+   */
+  useLayoutEffect(() => {
+    if (!open || !portal || point === undefined) return
+    const element = listRef.current
+    if (element === null) return
+    const box = element.getBoundingClientRect()
+    // 行还没到（display:none）时先量到 0 宽：这不是「不用定位」，是「还没到定位的时机」。
+    // 推一帧再试一次，而不是返回——返回之后依赖不再变化，就再也不会重算了。
+    if (box.width === 0) {
+      const retry = requestAnimationFrame(() => { setPositionTick(tick => tick + 1) })
+      return () => { cancelAnimationFrame(retry) }
+    }
+    const margin = 12
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const startLeft = resolvedAlign === 'end' ? point.x - box.width : point.x
+    const left = Math.min(Math.max(margin, startLeft), Math.max(margin, vw - margin - box.width))
+    let top = point.y + 4
+    if (top + box.height > vh - margin) top = Math.max(margin, point.y - 4 - box.height)
+    element.style.setProperty('left', `${left}px`, 'important')
+    element.style.setProperty('top', `${top}px`, 'important')
+    element.style.setProperty('right', 'auto', 'important')
+    element.style.setProperty('bottom', 'auto', 'important')
+    return () => {
+      element.style.removeProperty('left')
+      element.style.removeProperty('top')
+      element.style.removeProperty('right')
+      element.style.removeProperty('bottom')
+    }
+  }, [open, portal, point, resolvedAlign, items, footer, positionTick])
   const [externalAnchor, setExternalAnchor] = useState<HTMLElement | null>(null)
   const positioned = !portal || anchorRef === undefined || externalAnchor !== null
   // External refs can attach after this component or replace their element
@@ -492,7 +570,7 @@ export function Menu({ open, anchor, items = [], children, submenuBackLabel, sel
       className={clsx(css.list, listClassName, dense && css.denseList, compact && css.compactList, css.scrollable, submenu.page && css.parentPage, portal && css.portal, side === 'top' && !portal && css.sideTop, align === 'end' && !portal && css.alignEnd)}
       style={portal ? { positionAnchor: anchorName } : undefined}
       data-anchor-side={portal ? side : undefined}
-      data-anchor-align={portal ? align : undefined}
+      data-anchor-align={portal ? resolvedAlign : undefined}
       data-match-anchor-width={portal && minWidthFromAnchor ? '' : undefined}
       role={exiting === undefined && !submenu.page ? 'menu' : undefined}
       aria-hidden={exiting === undefined && !submenu.page ? undefined : true}
