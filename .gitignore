@@ -40,6 +40,7 @@ apps/web/dist/
 .artifacts/
 .dsh-build/
 .dsh-report/
+.ui-review/
 .playwright-mcp/
 .orig
 .worktrees/
@@ -47,5 +48,9 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
-# dsh-purge 本地备份（不入库）
+
+# Generated company-signed CUA release record.
+/packages/experimental/cua-macos/cua-helper.json
+
+# 本地：dsh-purge 的自动备份
 *.dshpurge.bak
