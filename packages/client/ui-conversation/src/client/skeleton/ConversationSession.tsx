@@ -29,7 +29,10 @@ function ViewsMoreMenu({ label, current, entries, onOpen, onPinnedChange, render
   const [open, setOpen] = useState(false)
   const onDismiss = (): void => { setOpen(false) }
   return (
-    <Menu open={open} onClose={onDismiss} portal autoFocus className={css.viewsMoreAnchor} listClassName={css.viewsMoreMenu}
+    // 本地修正（2026-11-05）：原先用 portal，popup 靠 CSS anchor positioning 定位，
+    // 锚点矩形算不到按钮（菜单弹到内容区左端）。改为就地渲染，由 .viewsMoreMenu
+    // 的 right:0 让卡片贴按钮右缘向下展开，不再依赖 anchor-name/position-anchor。
+    <Menu open={open} onClose={onDismiss} autoFocus className={css.viewsMoreAnchor} listClassName={css.viewsMoreMenu}
       anchor={(
         <Tooltip label={label} portal>
           <Button size="sm" className={clsx(css.viewsMore, current && css.viewsMoreActive)} aria-label={label} aria-haspopup="menu" aria-expanded={open}
