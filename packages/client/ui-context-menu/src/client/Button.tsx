@@ -43,7 +43,12 @@ export function ContextMenuButton({ target, label, className, size, useOpener, u
       event.stopPropagation()
       event.currentTarget.focus({ preventScroll: true })
       const rect = event.currentTarget.getBoundingClientRect()
-      toggle(id, target, { x: rect.left, y: rect.bottom })
+      // 本地修正（2026-11-05）：会话头部「…」在右缘，以 rect.left 作锚点时菜单放不下，
+      // 会回落到视口左侧 12px（现象：popup 弹到内容区最左）。把锚点横向坐标夹到
+      // 「菜单至少放得下 MENU_MIN_WIDTH」的范围内，菜单就会贴在按钮下方而不是跑到左边。
+      const MENU_MIN_WIDTH = 300
+      const maxLeft = Math.max(12, window.innerWidth - MENU_MIN_WIDTH)
+      toggle(id, target, { x: Math.min(rect.left, maxLeft), y: rect.bottom })
     },
   }
   return <Tooltip label={label} side="bottom" align="end" portal>
