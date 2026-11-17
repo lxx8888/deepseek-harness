@@ -22,12 +22,14 @@ import {
 } from '@deepseek-ai/dsh-subagent'
 import type { SubagentProvider } from '@deepseek-ai/dsh-subagent'
 import {
+  assertExplicitChildRoute,
   hasConfiguredLlmSelection,
   hasDelegationModelRequest,
   preflightChildLlmRoute,
   requestedAgentOptions,
+  teamAuthorizedPolicy,
 } from './model-selection.ts'
-import type { DelegationModelRequest } from './model-selection.ts'
+import type { ChildRouteRequirement, DelegationModelRequest } from './model-selection.ts'
 import { registerListSubagentModels } from './list-models.ts'
 import { SubagentPresetSelection, type PresetSelectionConfig, type PresetSelectionRequest } from './preset-selection.ts'
 import {
@@ -141,6 +143,18 @@ function providerWording(inheritsConversation: boolean): { description: string; 
 }
 
 /**
+ * Read the Team model-routing policy softly.
+ *
+ * A deployment without Agent Teams never mounts the policy service, and the
+ * delegation then keeps its ordinary inheritance behaviour.
+ * @param ctx - context that may own the Team routing policy.
+ * @returns the policy, or undefined when Team mode is unavailable.
+ */
+function teamRouteRequirement(ctx: Context): ChildRouteRequirement | undefined {
+  return ctx.get('teamModelRouting') as ChildRouteRequirement | undefined
+}
+
+/**
  * Install one delegation-tool composition.
  * The owning composition shares its registrations across Agents; child startup resolves the selected preset.
  * @param ctx - Context that owns the registrations.
@@ -213,6 +227,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
           ? ' Use `send_message` to steer it while running or continue its conversation after it finishes.'
           : ' This backend does not accept follow-up messages.')
         + (modelSelectionEnabled ? selectionDescription : '')
+        + ' In Team mode, every child must name its own `provider` and `model`; a child never inherits this Session\'s route.'
         + (modelSelectionEnabled && subagentProvider.inheritsParentContext
           ? ' Changing the route can prevent provider-side reuse of the inherited conversation prefix.'
           : ''),
@@ -279,11 +294,22 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
           throw new ToolContextUnavailableError('subagent tool requires a calling agent (exec.agent was undefined)')
         }
 
-        const routes = subagentModelSelectionPolicy(subagentModelSelectionProjectionHandle, parent.session)
-        const modelSelectionPolicy = routes === undefined ? undefined : { routes }
+        const recordedRoutes = subagentModelSelectionPolicy(subagentModelSelectionProjectionHandle, parent.session)
         const agentPreset = presets.resolve(args as PresetSelectionRequest)
         const modelRequest = args as DelegationModelRequest
         const parentOptions = parentAgentOptionsForDelegation(parent)
+        // Team mode requires every child to name its own route, so a child never
+        // silently inherits the parent's — and an expensive decision model never
+        // fans out unnoticed across a bulk of children. A Team policy's priced
+        // routes are also its authorization, so requiring an explicit route can
+        // never collide with an allowlist that was never told about them.
+        const teamRequirement = teamRouteRequirement(ctx)
+        assertExplicitChildRoute(teamRequirement, parent, modelRequest)
+        const modelSelectionPolicy = teamAuthorizedPolicy(
+          recordedRoutes === undefined ? undefined : { routes: recordedRoutes },
+          teamRequirement,
+          parent,
+        )
         const requiresRoutePreflight = hasDelegationModelRequest(modelRequest)
           || hasConfiguredLlmSelection(config.agentOptions)
         const configuredChildAgentOptions = requiresRoutePreflight && providerRouteDefaults !== undefined

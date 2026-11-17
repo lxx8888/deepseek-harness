@@ -157,6 +157,91 @@ export function assertAllowedModelSelection(
 }
 
 /**
+ * The subset of the Team model-routing policy this module needs.
+ *
+ * Declared structurally so the delegation tool does not depend on the Team
+ * packages: the policy service is queried softly, and a deployment without
+ * Agent Teams never mounts it.
+ */
+export interface ChildRouteRequirement {
+  /** Whether a child delegation must name its route explicitly. */
+  requiresExplicitChildRoute(agent: unknown): boolean
+  /** The declared bulk-work route, when the deployment declares one. */
+  bulkRoute(): { provider: string; model: string } | undefined
+  /**
+   * Exact routes the Team policy itself authorizes, when it declares any.
+   *
+   * A Team deployment prices the routes it means to route work onto. Reading
+   * those same routes as authorization keeps the two facts from drifting: a
+   * priced route is a route a Lead may pick, without a second allowlist that
+   * can fall out of date.
+   */
+  authorizedRoutes?(): { provider: string; model: string }[]
+}
+
+/**
+ * Enforce the Team-mode requirement that a child names its own route.
+ *
+ * Outside Team mode this is a no-op, so ordinary Sessions keep inheriting the
+ * parent route. Inside Team mode a delegation that names no route is refused:
+ * the caller must pick the route that fits the work, either explicitly or by
+ * using the declared bulk route.
+ * @param requirement - the Team routing policy, when one is mounted.
+ * @param agent - exact live delegating agent.
+ * @param request - model-facing route fields from the tool call.
+ * @throws when the policy requires explicit selection and the call names none.
+ */
+export function assertExplicitChildRoute(
+  requirement: ChildRouteRequirement | undefined,
+  agent: unknown,
+  request: DelegationModelRequest,
+): void {
+  if (requirement === undefined) return
+  if (!requirement.requiresExplicitChildRoute(agent)) return
+  if (request.provider !== undefined && request.model !== undefined) return
+  const bulk = requirement.bulkRoute()
+  const bulkHint = bulk === undefined
+    ? 'Compare routes with the Team model comparison tool, then pass `provider` and `model`.'
+    : 'Compare routes with the Team model comparison tool, then pass `provider` and `model`; '
+      + `use ${bulk.provider}/${bulk.model} for large-volume, repetitive work.`
+  throw new Error(
+    'Team mode requires every child delegation to name its own `provider` and `model`; '
+    + 'a child never inherits this Session\'s route. ' + bulkHint,
+  )
+}
+
+/**
+ * Merge the Team policy's authorized routes into a Session's allowlist.
+ *
+ * Only an active Team policy contributes. Outside Team mode the recorded
+ * allowlist stands exactly as written, so ordinary Sessions never gain routes
+ * from a deployment's price table.
+ * @param policy - the Session's recorded allowlist, or undefined when none is recorded.
+ * @param requirement - the Team routing policy, when one is mounted and active.
+ * @param agent - exact live delegating agent.
+ * @returns the policy to enforce, or undefined to keep parent-route-only selection.
+ */
+export function teamAuthorizedPolicy(
+  policy: ModelSelectionPolicy | undefined,
+  requirement: ChildRouteRequirement | undefined,
+  agent: unknown,
+): ModelSelectionPolicy | undefined {
+  if (requirement === undefined) return policy
+  if (!requirement.requiresExplicitChildRoute(agent)) return policy
+  const authorized = requirement.authorizedRoutes?.() ?? []
+  if (authorized.length === 0) return policy
+  const merged = [...(policy?.routes ?? [])]
+  const seen = new Set(merged.map(route => modelRouteKey(route)))
+  for (const route of authorized) {
+    const key = modelRouteKey(route)
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push({ provider: route.provider, model: route.model })
+  }
+  return { routes: merged }
+}
+
+/**
  * Whether configured Agent options require route validation before delegation.
  * @param options - Tool-instance child defaults.
  * @returns Whether configured provider, model, or effort values must be resolved.

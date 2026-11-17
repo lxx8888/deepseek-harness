@@ -5,6 +5,7 @@ import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import type { TeamTaskId, TeamTaskView } from '@deepseek-ai/dsh-agent-team'
+import type {} from '@deepseek-ai/dsh-team-model-routing'
 import { defineTool, ToolArgsError, ToolContextUnavailableError } from '@deepseek-ai/dsh-tools'
 import type { InferValue, ValueSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { brandString } from '@deepseek-ai/dsh-brand'
@@ -56,6 +57,58 @@ const TASK_LIST_VALUE_SCHEMA = {
   properties: {
     tasks: { type: 'array', required: true, items: TASK_VIEW_SCHEMA },
     nextCursor: { type: 'integer' },
+  },
+} as const
+
+/** One model's comparison row: identity, capabilities, and declared price. */
+const MODEL_COMPARISON_ROW_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string', required: true },
+    model: { type: 'string', required: true },
+    name: { type: 'string', required: true },
+    contextWindow: { type: 'integer' },
+    reasoningEfforts: { type: 'array', items: { type: 'string' } },
+    price: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        inputPerMillion: { type: 'number', required: true },
+        outputPerMillion: { type: 'number', required: true },
+        currency: { type: 'string', required: true },
+      },
+    },
+    sessionRoute: { type: 'boolean', required: true },
+    bulkRoute: { type: 'boolean', required: true },
+  },
+} as const
+
+/** The comparison the Lead reads before dispatching Team work. */
+const MODEL_COMPARISON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    sessionRoute: {
+      type: 'object',
+      additionalProperties: false,
+      required: true,
+      properties: {
+        provider: { type: 'string', required: true },
+        model: { type: 'string', required: true },
+      },
+    },
+    bulkRoute: {
+      type: 'object',
+      additionalProperties: false,
+      required: true,
+      properties: {
+        provider: { type: 'string', required: true },
+        model: { type: 'string', required: true },
+      },
+    },
+    requiresExplicitChildRoute: { type: 'boolean', required: true },
+    models: { type: 'array', required: true, items: MODEL_COMPARISON_ROW_SCHEMA },
   },
 } as const
 
@@ -113,6 +166,20 @@ export function apply(ctx: Context, config: Config = {}): void {
     name: 'team:policy',
     order: ctx.systemPrompt.getSectionOrder('TEAM_POLICY'),
     text: ({ agent }) => enabled(agent) ? TEAM_POLICY : '',
+  })
+  // The routing policy is dynamic: the Session's own route, the live catalog,
+  // and the deployment's prices all change over a Team Session's life. A
+  // runtime context is re-evaluated per assembly, so the guidance never goes
+  // stale the way a cached section would.
+  ctx.systemPrompt.context({
+    name: 'team:model-routing',
+    order: ctx.systemPrompt.getContextOrder('TEAM_MODEL_ROUTING'),
+    text: ({ agent }) => {
+      if (agent === undefined || !enabled(agent)) return ''
+      const routing = ctx.get('teamModelRouting')
+      if (routing === undefined) return ''
+      return routing.guidance(agent)
+    },
   })
   ctx.tools.register(defineTool({
     name: 'team_task_create',
@@ -230,6 +297,55 @@ export function apply(ctx: Context, config: Config = {}): void {
         ...args.owner === undefined ? {} : { owner: await ctx.subagents.resolveName(caller, args.owner, exec.signal) },
       }, exec.signal)
       return withOwnerName(task)
+    },
+  }), { when: ({ agent }) => enabled(agent) })
+
+  // The price comparison is the pre-dispatch step of Team mode: the Lead
+  // compares routes before it splits work, so the decision happens once and
+  // the chosen route travels with the task.
+  ctx.tools.register(defineTool({
+    name: 'team_model_compare',
+    description: 'Compare the models available to this Team session before dispatching work. '
+      + 'Lists each route with its context window, reasoning efforts, and deployment-declared price, '
+      + "marks this session's own route (used by management and decision nodes) and the bulk-work "
+      + 'route (used for large-volume, repetitive work), and sorts priced routes cheapest first.',
+    parameters: {},
+    output: jsonOutput(MODEL_COMPARISON_SCHEMA),
+    async execute(_args, exec) {
+      const caller = callingAgent(exec.agent, 'team_model_compare')
+      const routing = ctx.get('teamModelRouting')
+      if (routing === undefined) {
+        throw new ToolContextUnavailableError('team_model_compare requires the team-model-routing service')
+      }
+      const llm = ctx.get('llm')
+      if (llm === undefined) {
+        throw new ToolContextUnavailableError('team_model_compare requires the `llm` service')
+      }
+      const policy = await routing.policyFor(caller, llm, exec.signal)
+      if (policy === undefined) {
+        throw new ToolContextUnavailableError('team_model_compare requires Team mode to be enabled for this session')
+      }
+      return {
+        sessionRoute: policy.sessionRoute,
+        bulkRoute: policy.bulkRoute,
+        requiresExplicitChildRoute: policy.requiresExplicitChildRoute,
+        models: policy.rows.map(row => ({
+          provider: row.provider,
+          model: row.model,
+          name: row.name,
+          ...row.contextWindow === undefined ? {} : { contextWindow: row.contextWindow },
+          ...row.reasoningEfforts === undefined ? {} : { reasoningEfforts: [...row.reasoningEfforts] },
+          ...row.price === undefined ? {} : {
+            price: {
+              inputPerMillion: row.price.inputPerMillion,
+              outputPerMillion: row.price.outputPerMillion,
+              currency: row.price.currency,
+            },
+          },
+          sessionRoute: row.sessionRoute,
+          bulkRoute: row.bulkRoute,
+        })),
+      }
     },
   }), { when: ({ agent }) => enabled(agent) })
 }

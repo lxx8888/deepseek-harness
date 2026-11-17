@@ -40,6 +40,7 @@ function runtimeContextText(request: GenerateOptions) {
 
 const SIGNAL = new AbortController().signal
 const TEAM_TOOLS = [
+  'team_model_compare',
   'team_task_create',
   'team_task_get',
   'team_task_list',

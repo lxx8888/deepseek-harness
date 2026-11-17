@@ -3977,7 +3977,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-system-prompt`
 
-- `source`: [`packages/core/system-prompt/src/index.ts:265`](../packages/core/system-prompt/src/index.ts)
+- `source`: [`packages/core/system-prompt/src/index.ts:266`](../packages/core/system-prompt/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.personaPrefix} for its contract). */
@@ -4005,6 +4005,59 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-system-prompt -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-team-model-routing -->
+<a id="deepseek-aidsh-team-model-routing"></a>
+
+## `@deepseek-ai/dsh-team-model-routing`
+
+- `inject`: `agents`
+- `source`: [`packages/team/team-model-routing/src/index.ts:83`](../packages/team/team-model-routing/src/index.ts)
+
+```ts config-catalog
+/** Deployment configuration of the routing policy. */
+export interface Config {
+  /** Whether a child delegation must name `provider` and `model` explicitly. */
+  requireExplicitChildRoute: boolean
+  /** The route used for large-volume, repetitive child work. */
+  bulkRoute: BulkRoute
+  /** Deployment-declared prices, keyed by exact provider/model route. */
+  prices: ModelPrice[]
+}
+
+/**
+ * The route used for large-volume, repetitive child work.
+ *
+ * A child inherits nothing: the Lead names this route explicitly when the
+ * delegated work is bulk and mechanical.
+ */
+export interface BulkRoute {
+  /** Registered provider id. */
+  readonly provider: string
+  /** Provider-owned model id. */
+  readonly model: string
+}
+
+/**
+ * One exact provider/model route with its declared token prices.
+ *
+ * Prices are deployment-owned facts: the LLM model directory carries no price
+ * fields, so a comparison tool needs them from configuration.
+ */
+export interface ModelPrice {
+  /** Registered provider id. */
+  readonly provider: string
+  /** Provider-owned model id. */
+  readonly model: string
+  /** Input price per million tokens, in the deployment's currency unit. */
+  readonly inputPerMillion: number
+  /** Output price per million tokens, in the deployment's currency unit. */
+  readonly outputPerMillion: number
+  /** Currency unit the two prices are denominated in. */
+  readonly currency: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-team-model-routing -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-terminal-bash -->
 <a id="deepseek-aidsh-terminal-bash"></a>
@@ -4256,7 +4309,7 @@ export type TokenMeterConfig = Record<string, never>
 ## `@deepseek-ai/dsh-tool-agent-team`
 
 - `inject`: `agentTeams` · `subagents` · `tools` · `systemPrompt`
-- `source`: [`packages/team/tool-agent-team/src/index.ts:18`](../packages/team/tool-agent-team/src/index.ts)
+- `source`: [`packages/team/tool-agent-team/src/index.ts:19`](../packages/team/tool-agent-team/src/index.ts)
 
 ```ts config-catalog
 /** The Team tool plugin takes no configuration. */
@@ -4686,7 +4739,7 @@ export interface Config {
 
 - `inject`: `tools` · `subagents` · `systemPrompt` · `sessionProjections`
 - `refs`: [`AgentOptions`](subsystems/core.zh.md)
-- `source`: [`packages/subagent/tool-subagent/src/index.ts:46`](../packages/subagent/tool-subagent/src/index.ts)
+- `source`: [`packages/subagent/tool-subagent/src/index.ts:48`](../packages/subagent/tool-subagent/src/index.ts)
 
 ```ts config-catalog
 /** Config: which registered provider this tool delegates to, plus child defaults. */

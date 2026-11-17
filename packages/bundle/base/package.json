@@ -107,6 +107,7 @@
     "@deepseek-ai/dsh-subprocess-local": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-token-meter": "workspace:*",
+    "@deepseek-ai/dsh-team-model-routing": "workspace:*",
     "@deepseek-ai/dsh-tool-agent-team": "workspace:*",
     "@deepseek-ai/dsh-tool-bash": "workspace:*",
     "@deepseek-ai/dsh-tool-call-timeout-policy": "workspace:*",
