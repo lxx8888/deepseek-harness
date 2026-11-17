@@ -146,6 +146,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   sessionTelemetry: 'session-telemetry.md',
   liveshareShares: 'liveshare.md',
   agentTeams: 'agent-team.md',
+  teamModelRouting: 'agent-team.md',
   claudeCodeMods: 'claude-code-mods.md',
   tokenMeter: 'token-meter.md',
   toolResultPruner: 'compaction.md',
@@ -319,6 +320,9 @@ export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
  * appear on more than one page.
  */
 export const LINK_MAP: Readonly<Record<string, string>> = {
+  BulkRoute: 'agent-team.md',
+  ModelPrice: 'agent-team.md',
+  TeamModelPolicy: 'agent-team.md',
   AuthenticationProvider: '../../packages/client/connection/README.md#browser-authentication-and-request-trust',
   PeerId: 'typert.md',
   Principal: 'typert.md',

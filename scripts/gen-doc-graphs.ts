@@ -888,6 +888,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Owns the shared task DAG for a subagent tree; tool-agent-team contributes task controls.',
   },
   {
+    key: 'teamModelRouting',
+    pkg: 'team-model-routing',
+    title: 'Team-mode model routing policy',
+    mode: 'core',
+    consumers: ['tool-agent-team'],
+    note: 'Owns the deployment-declared model prices, the decision-node route, and the bulk-work route Team mode routes work onto; the delegation tool reads the explicit-child-route requirement from it.',
+  },
+  {
     key: 'claudeCodeMods',
     pkg: 'experimental-claude-code-mods',
     title: 'Claude Code mods bridge',

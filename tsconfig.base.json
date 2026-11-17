@@ -392,6 +392,7 @@
       "@deepseek-ai/dsh-experimental-auto-review": ["./packages/experimental/auto-review/src"],
       "@deepseek-ai/dsh-experimental-claude-code-mods": ["./packages/experimental/claude-code-mods/src"],
       "@deepseek-ai/dsh-tool-agent-team": ["./packages/team/tool-agent-team/src"],
+      "@deepseek-ai/dsh-team-model-routing": ["./packages/team/team-model-routing/src"],
       "@deepseek-ai/dsh-experimental-worktree": ["./packages/experimental/worktree/src"],
       "@deepseek-ai/dsh-experimental-worktree/types": ["./packages/experimental/worktree/src/types.ts"],
       "@deepseek-ai/dsh-experimental-tool-worktree": ["./packages/experimental/tool-worktree/src"],

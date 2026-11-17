@@ -191,4 +191,101 @@ async updateTask(caller: Agent, request: UpdateTeamTaskRequest, signal?: AbortSi
 Types: [Agent](core.zh.md)
 
 Source: [`packages/team/agent-team/src/index.ts`](../../packages/team/agent-team/src/index.ts)
+
+<a id="ctxteammodelrouting--teammodelroutingservice"></a>
+
+### `ctx.teamModelRouting` — `TeamModelRoutingService`
+
+Team-mode model routing policy owner.
+
+Reads its configuration on every operation so a settings write reaches the next delegation without a restart.
+
+```ts cordis-catalog
+/**
+ * Whether Team mode is active for the caller's tree.
+ *
+ * A Team service that refuses the caller (an independently resumed child
+ * with no active root) counts as inactive.
+ * @param agent - exact live caller.
+ * @returns whether Team mode governs this caller.
+ */
+active(agent: Agent): boolean
+
+/**
+ * Whether a child delegation must name its route explicitly.
+ *
+ * Inactive outside Team mode, so ordinary Sessions keep inheriting the
+ * parent route.
+ * @param agent - exact live delegating agent.
+ * @returns whether explicit selection is required.
+ */
+requiresExplicitChildRoute(agent: Agent): boolean
+
+/**
+ * The declared bulk-work default route.
+ * @returns the route, or undefined when the deployment declares none.
+ */
+bulkRoute(): BulkRoute | undefined
+
+/**
+ * Every deployment-declared price, cheapest first.
+ * @returns the sorted price list.
+ */
+prices(): ModelPrice[]
+
+/**
+ * The exact routes this policy authorizes for child delegation.
+ *
+ * A deployment prices the routes it means to route work onto, so the price
+ * table is also the authorization: a priced route is a route a Lead may
+ * pick, and the two facts cannot drift apart. Duplicates collapse.
+ * @returns one provider/model pair per priced route, in declaration order.
+ */
+authorizedRoutes(): { provider: string; model: string }[]
+
+/**
+ * The deployment-declared price of one exact route.
+ * @param route - exact provider/model route.
+ * @returns the price, or undefined when the deployment prices no such route.
+ */
+priceOf(route: { provider: string; model: string }): ModelPrice | undefined
+
+/**
+ * Build the full policy for one caller.
+ *
+ * The catalog comes from the live LLM runtime, so a model that disappears
+ * between turns disappears from the comparison rather than lingering.
+ * @param agent - exact live caller.
+ * @param llm - live LLM runtime.
+ * @param signal - cancellation for catalog reads.
+ * @returns the policy, or undefined when Team mode is inactive.
+ */
+async policyFor( agent: Agent, llm: LlmRuntime, signal: AbortSignal, ): Promise<TeamModelPolicy | undefined>
+
+/**
+ * The route this Session is currently using.
+ *
+ * The recorded request header owns the route after the first request; the
+ * creation options answer before that.
+ * @param agent - exact live caller.
+ * @returns the Session's own provider and model.
+ */
+sessionRouteOf(agent: Agent): { provider: string; model: string }
+
+/**
+ * Render the model-facing guidance for one caller.
+ *
+ * The guidance names the decision-node route, the bulk-work route, and the
+ * explicit-selection requirement, so the Lead can delegate without a second
+ * round trip. Prices come from the deployment's table, which is synchronous;
+ * the live catalog comparison is the tool's job.
+ * @param agent - exact live caller.
+ * @returns the guidance text, empty when Team mode is inactive.
+ */
+guidance(agent: Agent): string
+```
+
+Types: [Agent](core.zh.md) · [LlmRuntime](llm-streaming.zh.md)
+
+Source: [`packages/team/team-model-routing/src/index.ts`](../../packages/team/team-model-routing/src/index.ts)
 <!-- END GENERATED cordis-surface -->

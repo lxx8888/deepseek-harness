@@ -368,6 +368,39 @@
       config:
         maxTasks: 256
 
+    # Team-mode model routing: prices the Lead compares before dispatching,
+    # the session route decision nodes keep, and the bulk route large
+    # repetitive work runs on. Prices are deployment-owned facts — the LLM
+    # model directory carries none.
+    - id: team-model-routing
+      name: '@deepseek-ai/dsh-team-model-routing'
+      config:
+        requireExplicitChildRoute: true
+        bulkRoute:
+          provider: deepseek-official
+          model: deepseek-flash
+        prices:
+          - provider: deepseek-official
+            model: deepseek-flash
+            inputPerMillion: 0.051
+            outputPerMillion: 0.567
+            currency: USD
+          - provider: deepseek-official
+            model: deepseek-v4-pro
+            inputPerMillion: 1.32
+            outputPerMillion: 3.96
+            currency: USD
+          - provider: deepseek-account
+            model: deepseek-flash
+            inputPerMillion: 0.051
+            outputPerMillion: 0.567
+            currency: USD
+          - provider: deepseek-account
+            model: deepseek-v4-pro
+            inputPerMillion: 1.32
+            outputPerMillion: 3.96
+            currency: USD
+
     - id: tool-agent-team
       name: '@deepseek-ai/dsh-tool-agent-team'
 

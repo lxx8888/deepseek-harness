@@ -4166,6 +4166,67 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'teamModelRouting',
+    summary: 'Team-mode model routing policy owner.',
+    description: 'Team-mode model routing policy owner.\n\nReads its configuration on every operation so a settings write reaches the next delegation without a restart.',
+    methods: [
+      {
+        signature: 'active(agent: Agent): boolean',
+        description: 'Whether Team mode is active for the caller\'s tree.\n\nA Team service that refuses the caller (an independently resumed child with no active root) counts as inactive.',
+        parameters: [{ name: 'agent', description: 'exact live caller.' }],
+        returns: 'whether Team mode governs this caller.',
+      },
+      {
+        signature: 'requiresExplicitChildRoute(agent: Agent): boolean',
+        description: 'Whether a child delegation must name its route explicitly.\n\nInactive outside Team mode, so ordinary Sessions keep inheriting the parent route.',
+        parameters: [{ name: 'agent', description: 'exact live delegating agent.' }],
+        returns: 'whether explicit selection is required.',
+      },
+      {
+        signature: 'bulkRoute(): BulkRoute | undefined',
+        description: 'The declared bulk-work default route.',
+        parameters: [],
+        returns: 'the route, or undefined when the deployment declares none.',
+      },
+      {
+        signature: 'prices(): ModelPrice[]',
+        description: 'Every deployment-declared price, cheapest first.',
+        parameters: [],
+        returns: 'the sorted price list.',
+      },
+      {
+        signature: 'authorizedRoutes(): { provider: string; model: string }[]',
+        description: 'The exact routes this policy authorizes for child delegation.\n\nA deployment prices the routes it means to route work onto, so the price table is also the authorization: a priced route is a route a Lead may pick, and the two facts cannot drift apart. Duplicates collapse.',
+        parameters: [],
+        returns: 'one provider/model pair per priced route, in declaration order.',
+      },
+      {
+        signature: 'priceOf(route: { provider: string; model: string }): ModelPrice | undefined',
+        description: 'The deployment-declared price of one exact route.',
+        parameters: [{ name: 'route', description: 'exact provider/model route.' }],
+        returns: 'the price, or undefined when the deployment prices no such route.',
+      },
+      {
+        signature: 'async policyFor( agent: Agent, llm: LlmRuntime, signal: AbortSignal, ): Promise<TeamModelPolicy | undefined>',
+        description: 'Build the full policy for one caller.\n\nThe catalog comes from the live LLM runtime, so a model that disappears between turns disappears from the comparison rather than lingering.',
+        parameters: [{ name: 'agent', description: 'exact live caller.' }, { name: 'llm', description: 'live LLM runtime.' }, { name: 'signal', description: 'cancellation for catalog reads.' }],
+        returns: 'the policy, or undefined when Team mode is inactive.',
+      },
+      {
+        signature: 'sessionRouteOf(agent: Agent): { provider: string; model: string }',
+        description: 'The route this Session is currently using.\n\nThe recorded request header owns the route after the first request; the creation options answer before that.',
+        parameters: [{ name: 'agent', description: 'exact live caller.' }],
+        returns: 'the Session\'s own provider and model.',
+      },
+      {
+        signature: 'guidance(agent: Agent): string',
+        description: 'Render the model-facing guidance for one caller.\n\nThe guidance names the decision-node route, the bulk-work route, and the explicit-selection requirement, so the Lead can delegate without a second round trip. Prices come from the deployment\'s table, which is synchronous; the live catalog comparison is the tool\'s job.',
+        parameters: [{ name: 'agent', description: 'exact live caller.' }],
+        returns: 'the guidance text, empty when Team mode is inactive.',
+      },
+    ],
+  },
+  {
     key: 'terminalController',
     summary: 'Typed Remote control of transient Session-owned terminal processes.',
     description: 'Typed Remote control of transient Session-owned terminal processes.',
@@ -6255,6 +6316,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type BrowserUseProviderName = Branded<\'BrowserUseProviderName\'>;',
   },
   {
+    name: 'BulkRoute',
+    declaration: 'export interface BulkRoute {\n    readonly provider: string;\n    readonly model: string;\n}',
+  },
+  {
     name: 'BundleDetail',
     declaration: 'export type BundleDetail = {\n    readonly status: \'found\';\n    readonly origin: \'locale\' | \'readme\';\n    readonly path: string;\n    readonly markdown: string;\n} | {\n    readonly status: \'none\';\n};',
   },
@@ -7963,6 +8028,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ModelModalityMap {\n    text: \'text\';\n    image: \'image\';\n}',
   },
   {
+    name: 'ModelPrice',
+    declaration: 'export interface ModelPrice {\n    readonly provider: string;\n    readonly model: string;\n    readonly inputPerMillion: number;\n    readonly outputPerMillion: number;\n    readonly currency: string;\n}',
+  },
+  {
     name: 'ModelProviderGroup',
     declaration: 'export interface ModelProviderGroup {\n    readonly id: string;\n    readonly name: string;\n    readonly models: readonly ModelCatalogModel[];\n}',
   },
@@ -7973,6 +8042,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ModelReasoningEffort',
     declaration: 'export interface ModelReasoningEffort {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n}',
+  },
+  {
+    name: 'ModelRoutingRow',
+    declaration: 'export interface ModelRoutingRow {\n    readonly provider: string;\n    readonly model: string;\n    readonly name: string;\n    readonly contextWindow?: number;\n    readonly reasoningEfforts?: readonly string[];\n    readonly price?: ModelPrice;\n    readonly sessionRoute: boolean;\n    readonly bulkRoute: boolean;\n}',
   },
   {
     name: 'ModEvents',
@@ -10109,6 +10182,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TableValueOf',
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
+  },
+  {
+    name: 'TeamModelPolicy',
+    declaration: 'export interface TeamModelPolicy {\n    readonly rows: readonly ModelRoutingRow[];\n    readonly sessionRoute: {\n        provider: string;\n        model: string;\n    };\n    readonly bulkRoute: BulkRoute;\n    readonly requiresExplicitChildRoute: boolean;\n}',
   },
   {
     name: 'TeamTaskAction',
