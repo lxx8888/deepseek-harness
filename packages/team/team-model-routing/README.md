@@ -69,7 +69,7 @@ The LLM model directory carries no price fields, so a comparison has to read the
         currency: USD
 ```
 
-A route without a price entry still appears in the comparison; only its price cell is absent.
+A route without a price entry still appears in the comparison; only its price cell is absent. A priced route is also an authorized child route: Team mode merges the price table into the Session's child-route allowlist, so the two facts cannot drift apart.
 
 ### What the policy decides
 
@@ -115,6 +115,10 @@ The recorded request header owns the route after the first request; the creation
 ### Price ordering
 
 Prices sort cheapest-first by a blended cost that weights output tokens three times input, because output tokens cost more on every priced route. Duplicate routes collapse to one row. The comparison is a deployment decision aid, not an accounting record.
+
+### Authorization follows the price table
+
+The delegation tool merges `authorizedRoutes()` — one entry per priced route — into the Session's recorded child-route allowlist while Team mode requires explicit selection. A deployment that prices a route thereby authorizes it, so requiring an explicit route can never collide with an allowlist that was never told about it. Outside Team mode the recorded allowlist stands exactly as written.
 
 </details>
 

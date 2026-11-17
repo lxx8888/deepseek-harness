@@ -142,8 +142,6 @@ flowchart LR
   cfg --> plugin_dsh_base_subagent
   plugin_dsh_base_agent_team["agent-team<br/>@deepseek-ai/dsh-agent-team"]
   cfg --> plugin_dsh_base_agent_team
-  plugin_dsh_base_team_model_routing["team-model-routing<br/>@deepseek-ai/dsh-team-model-routing"]
-  cfg --> plugin_dsh_base_team_model_routing
   plugin_dsh_base_tool_agent_team["tool-agent-team<br/>@deepseek-ai/dsh-tool-agent-team"]
   cfg --> plugin_dsh_base_tool_agent_team
   plugin_dsh_base_subagent_spawn_in_process["subagent-spawn-in-process<br/>@deepseek-ai/dsh-subagent-spawn-in-process"]
@@ -279,7 +277,6 @@ flowchart LR
 | `command-compact` | `@deepseek-ai/dsh-command-compact` |
 | `subagent` | `@deepseek-ai/dsh-subagent` |
 | `agent-team` | `@deepseek-ai/dsh-agent-team` |
-| `team-model-routing` | `@deepseek-ai/dsh-team-model-routing` |
 | `tool-agent-team` | `@deepseek-ai/dsh-tool-agent-team` |
 | `subagent-spawn-in-process` | `@deepseek-ai/dsh-subagent-spawn-in-process` |
 | `subagent-fork-in-process` | `@deepseek-ai/dsh-subagent-fork-in-process` |

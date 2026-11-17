@@ -15,13 +15,11 @@ class FakeTeamRouting extends Service {
     super(ctx, 'teamModelRouting')
   }
 
-  // Not an override: these members come from ChildRouteRequirement, not from
-  // the Service base class, so an `override` modifier fails to compile.
-  requiresExplicitChildRoute(_agent: unknown): boolean {
+  override requiresExplicitChildRoute(): boolean {
     return this.required
   }
 
-  bulkRoute(): { provider: string; model: string } {
+  override bulkRoute(): { provider: string; model: string } {
     return { provider: 'alpha', model: 'bulk-model' }
   }
 }
@@ -83,7 +81,7 @@ describe('team child route requirement', () => {
     const ctx = new Context()
     await ctx.plugin(FakeTeamRouting, true)
     const requirement = ctx.get('teamModelRouting') as ChildRouteRequirement
-    expect(requirement.requiresExplicitChildRoute({})).toBe(true)
+    expect(requirement.requiresExplicitChildRoute()).toBe(true)
     expect(() => {
       assertExplicitChildRoute(requirement, {}, {})
     }).toThrow('Team mode requires every child delegation to name its own')

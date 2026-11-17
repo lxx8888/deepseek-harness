@@ -180,37 +180,6 @@ export interface ChildRouteRequirement {
 }
 
 /**
- * Merge the Team policy's authorized routes into a Session's allowlist.
- *
- * Only an active Team policy contributes. Outside Team mode the recorded
- * allowlist stands exactly as written, so ordinary Sessions never gain routes
- * from a deployment's price table.
- * @param policy - the Session's recorded allowlist, or undefined when none is recorded.
- * @param requirement - the Team routing policy, when one is mounted and active.
- * @param agent - exact live delegating agent.
- * @returns the policy to enforce, or undefined to keep parent-route-only selection.
- */
-export function teamAuthorizedPolicy(
-  policy: ModelSelectionPolicy | undefined,
-  requirement: ChildRouteRequirement | undefined,
-  agent: unknown,
-): ModelSelectionPolicy | undefined {
-  if (requirement === undefined) return policy
-  if (!requirement.requiresExplicitChildRoute(agent)) return policy
-  const authorized = requirement.authorizedRoutes?.() ?? []
-  if (authorized.length === 0) return policy
-  const merged = [...(policy?.routes ?? [])]
-  const seen = new Set(merged.map(route => modelRouteKey(route)))
-  for (const route of authorized) {
-    const key = modelRouteKey(route)
-    if (seen.has(key)) continue
-    seen.add(key)
-    merged.push({ provider: route.provider, model: route.model })
-  }
-  return { routes: merged }
-}
-
-/**
  * Enforce the Team-mode requirement that a child names its own route.
  *
  * Outside Team mode this is a no-op, so ordinary Sessions keep inheriting the
@@ -239,6 +208,37 @@ export function assertExplicitChildRoute(
     'Team mode requires every child delegation to name its own `provider` and `model`; '
     + 'a child never inherits this Session\'s route. ' + bulkHint,
   )
+}
+
+/**
+ * Merge the Team policy's authorized routes into a Session's allowlist.
+ *
+ * Only an active Team policy contributes. Outside Team mode the recorded
+ * allowlist stands exactly as written, so ordinary Sessions never gain routes
+ * from a deployment's price table.
+ * @param policy - the Session's recorded allowlist, or undefined when none is recorded.
+ * @param requirement - the Team routing policy, when one is mounted and active.
+ * @param agent - exact live delegating agent.
+ * @returns the policy to enforce, or undefined to keep parent-route-only selection.
+ */
+export function teamAuthorizedPolicy(
+  policy: ModelSelectionPolicy | undefined,
+  requirement: ChildRouteRequirement | undefined,
+  agent: unknown,
+): ModelSelectionPolicy | undefined {
+  if (requirement === undefined) return policy
+  if (!requirement.requiresExplicitChildRoute(agent)) return policy
+  const authorized = requirement.authorizedRoutes?.() ?? []
+  if (authorized.length === 0) return policy
+  const merged = [...(policy?.routes ?? [])]
+  const seen = new Set(merged.map(route => modelRouteKey(route)))
+  for (const route of authorized) {
+    const key = modelRouteKey(route)
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push({ provider: route.provider, model: route.model })
+  }
+  return { routes: merged }
 }
 
 /**
