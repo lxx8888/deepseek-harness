@@ -13,6 +13,7 @@ import type { ILayout, MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/cli
 import type { PropsRenderSlots, PropsRuntime, SlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TrackProductEvent } from '@deepseek-ai/dsh-client-product-analytics/client'
 import { apply, inject } from '../src/client/index.ts'
+import { PANEL_PINS_STORAGE_KEY } from '../src/client/panel-pins.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -335,10 +336,10 @@ describe('sidebar global panels', () => {
 })
 
 describe('sidebar launcher pins', () => {
-  const PINS_KEY = 'dsh.slot.manual-order.sidebar.panellist.v1'
+  const PINS_KEY = PANEL_PINS_STORAGE_KEY
 
-  it('ignores stored unpinned panels and shows all registered launchers', async () => {
-    localStorage.setItem(PINS_KEY, JSON.stringify({ unpinned: [ALPHA, BETA, PLUGINS, 'removed-plugin'] }))
+  it('restores stored unpinned panels and keeps every row while no actions list exists', async () => {
+    localStorage.setItem(PINS_KEY, JSON.stringify([ALPHA, BETA, PLUGINS, 'removed-plugin']))
     const { runtime, locale, view } = await bench()
     await mountPanels(runtime, locale)
     const navigation = await view.findByRole('navigation', { name: 'Global panels' })
@@ -350,8 +351,20 @@ describe('sidebar launcher pins', () => {
     expect(runtime.slots.entries('main').map(entry => entry.options.key)).toEqual(['conversation', ALPHA, BETA, PLUGINS])
   })
 
+  it('hides a stored unpinned panel as soon as the actions list appears', async () => {
+    localStorage.setItem(PINS_KEY, JSON.stringify([ALPHA]))
+    const { runtime, locale, view } = await bench()
+    await mountPanels(runtime, locale)
+    const navigation = await view.findByRole('navigation', { name: 'Global panels' })
+    expect(within(navigation).getByRole('button', { name: 'Alpha panel' })).toBeTruthy()
+    const probe = await mountProbeActions(runtime)
+    await waitFor(() => { expect(within(navigation).queryByRole('button', { name: 'Alpha panel' })).toBeNull() })
+    expect(within(navigation).getByRole('button', { name: 'More' })).toBeTruthy()
+    await probe.dispose()
+  })
+
   it('shows every panel when the stored list is not a string array', async () => {
-    localStorage.setItem(PINS_KEY, JSON.stringify({ unpinned: [ALPHA, 1] }))
+    localStorage.setItem(PINS_KEY, JSON.stringify([ALPHA, 1]))
     const { runtime, locale, view } = await bench()
     await mountPanels(runtime, locale)
     const navigation = await view.findByRole('navigation', { name: 'Global panels' })
@@ -393,7 +406,7 @@ describe('sidebar launcher pins', () => {
       .toEqual(['Open Beta panel', 'Unpin Beta panel', 'Open Alpha panel', 'Unpin Alpha panel', 'Dismiss'])
 
     fireEvent.click(menu.getByRole('menuitem', { name: 'Unpin Alpha panel' }))
-    expect(localStorage.getItem(PINS_KEY)).toBeNull()
+    expect(JSON.parse(localStorage.getItem(PINS_KEY) ?? '[]')).toEqual([ALPHA])
     await waitFor(() => { expect(within(navigation).queryByRole('button', { name: 'Alpha panel' })).toBeNull() })
     expect(menu.getByRole('menuitem', { name: 'Pin Alpha panel' })).toBeTruthy()
     fireEvent.click(menu.getByRole('menuitem', { name: 'Open Alpha panel' }))

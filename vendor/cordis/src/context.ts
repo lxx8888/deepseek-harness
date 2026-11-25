@@ -69,6 +69,18 @@ export class Context {
     Context.prototype[Context.is as any] = true
   }
 
+  /**
+   * Backward compatibility: the application root context, as in Cordis 3.x.
+   *
+   * Cordis 4 makes the context a proxy whose unknown-property reads throw
+   * (`cannot get property "<name>" without inject`). Plugins written against
+   * 3.x still read `ctx.root` on every hop of a nested context, so expose the
+   * root as a plain getter instead of forcing every plugin to migrate.
+   */
+  get root(): Context {
+    return this[symbols.root] as Context
+  }
+
   /** Create the root context and install the built-in services. */
   constructor() {
     this[symbols.isolate] = Object.create(null)

@@ -2430,7 +2430,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 
 ### `team_model_compare`
 
-在派工之前比较本 Team 会话可用的模型。列出每条路由的上下文窗口、推理力度档位与部署声明价格，标注本会话自己的路由（供管理与决策节点使用）和批量路由（供大容量、重复性工作使用），并将有价格的路由按最低价优先排序。
+在派发工作之前比较本 Team 会话可用的模型。逐条列出每条路由的上下文窗口、可用推理档位与部署声明的价格，标出本会话自身路由（供管理与决策节点使用）和大批量工作路由（用于大规模、重复性工作），并把已报价的路由按价格从低到高排序。
 
 ```json
 {
@@ -2439,7 +2439,7 @@ subagent_oar 工具在为外部提供方配置的别名之间选择。本目录�
 }
 ```
 
-Source: [`packages/team/tool-agent-team/src/index.ts`](../packages/team/tool-agent-team/src/index.ts)
+来源：[`packages/team/tool-agent-team/src/index.ts`](../packages/team/tool-agent-team/src/index.ts)
 
 ### `team_task_create`
 
