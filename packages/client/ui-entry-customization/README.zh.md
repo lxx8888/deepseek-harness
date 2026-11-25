@@ -65,8 +65,8 @@ kind: "package-reference"
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- 只有左侧栏提供 Pin 控件：侧栏行取消固定，侧栏更多菜单重新固定。固定选择仅保存在所属区域的内存中；插件重新加载后恢复默认值。
-- 不读取或写入 localStorage 中的旧 Pin 值。
+- 只有左侧栏提供 Pin 控件：侧栏行取消固定，侧栏更多菜单重新固定。固定选择持久化在 `localStorage` 的 `dsh.sidebar.panel-pins.v1` 键下，插件重新加载与宿主重启后仍然保留。
+- 已退役的 manual-order Pin 值（`dsh.slot.manual-order.sidebar.panellist.v1`）既不读取也不写入。
 - **创建你的插件**不检查 Creator 预设是否存在。预设缺失时 Session 创建失败，Workspace 显示创建失败提示，不准备草稿。草稿准备还要求可确定目标 Workspace；没有目标时，现有流程提示需要 Workspace。
 - 会话区域负责按估算值分组；菜单不提供排序。
 - 会话控件遵循现有非空 Session 头部与代码工作工具的可用性规则。右侧栏控件要求已选择 Session，并显示在其起始页。

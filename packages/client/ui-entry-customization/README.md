@@ -65,8 +65,8 @@ None; the package neither assembles nor sends model requests.
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- Only the left sidebar provides pin controls: its rows unpin, and its More menu pins. Pin choices remain in memory in the region owner; plugin reload restores defaults.
-- Legacy pin values in localStorage are neither read nor written.
+- Only the left sidebar provides pin controls: its rows unpin, and its More menu pins. Pin choices persist in `localStorage` under `dsh.sidebar.panel-pins.v1`, so a plugin reload and a host restart keep them.
+- The retired manual-order pin value (`dsh.slot.manual-order.sidebar.panellist.v1`) is neither read nor written.
 - **Create your plugin** does not check whether the Creator preset exists. Without it, Session creation fails, the Workspace shows its creation-failure notice, and no draft is prepared. Draft preparation also requires a resolvable Workspace; without one, the existing flow reports that a Workspace is required.
 - Conversation owns the estimated tab split; these menus provide no sorting.
 - Conversation controls follow the existing nonblank-Session header and Coding Tools eligibility. Right-sidebar controls require a selected Session and appear on its guide page.
