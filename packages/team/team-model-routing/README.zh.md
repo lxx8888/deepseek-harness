@@ -29,7 +29,7 @@ kind: "package-reference"
 ### Smallest working setup
 
 ```yaml
-# 在已有可续接子代理的组合之上，团队模式需要的三个包
+# Team additions over a composition with continuable subagents
 - name: '@deepseek-ai/dsh-agent-team'
 - name: '@deepseek-ai/dsh-team-model-routing'
 - name: '@deepseek-ai/dsh-tool-agent-team'
@@ -43,7 +43,7 @@ kind: "package-reference"
 | `bulkRoute` | 空 | 大批量、重复性子工作使用的路由 |
 | `prices` | 空 | 按精确 provider/model 路由声明的输入与输出价格 |
 
-生成的[配置目录](../../../docs/config-catalog.md#deepseek-aidsh-team-model-routing)是所有可接受字段及其 JSDoc 的完备来源。
+生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-team-model-routing)是所有可接受字段及其 JSDoc 的完备来源。
 
 ### 为什么价格由部署声明
 
@@ -127,9 +127,9 @@ LLM 模型目录不携带任何价格字段，因此对比必须从配置读取�
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [Agent Teams 子系统](../../../docs/subsystems/agent-team.md)——持久化的 Team 类型与 `ctx.agentTeams` 服务 API。
-- [tool-agent-team 包](../tool-agent-team/README.md)——`team_model_compare` 工具与共享看板策略。
-- [子代理派生工具](../../subagent/tool-subagent/README.md)——本策略所约束的子路由选择。
+- [Agent Teams 子系统](../../../docs/subsystems/agent-team.zh.md)——持久化的 Team 类型与 `ctx.agentTeams` 服务 API。
+- [tool-agent-team 包](../tool-agent-team/README.zh.md)——`team_model_compare` 工具与共享看板策略。
+- [子代理派生工具](../../subagent/tool-subagent/README.zh.md)——本策略所约束的子路由选择。
 
 -----
 

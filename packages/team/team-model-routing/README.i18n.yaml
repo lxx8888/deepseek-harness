@@ -1,0 +1,76 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/team/team-model-routing/README.md
+/:
+  en: fe7edc1df1b1776c
+  zh: 123b12cf71f5bd64
+/deepseek-ai-dsh-team-model-routing:
+  en: c72176b07ab46985
+  zh: 00e523899b08d7ff
+/deepseek-ai-dsh-team-model-routing/summary:
+  en: 381201de157994fb
+  zh: 49322348348c04cd
+/deepseek-ai-dsh-team-model-routing/table-of-contents:
+  en: b563e4ec4727d0de
+  zh: b563e4ec4727d0de
+/deepseek-ai-dsh-team-model-routing/use-this-package:
+  en: f7643b14474c418e
+  zh: ff6556d7db75edf5
+/deepseek-ai-dsh-team-model-routing/use-this-package/smallest-working-setup:
+  en: a8acd175a245a27e
+  zh: 598ce2038ef94fab
+/deepseek-ai-dsh-team-model-routing/use-this-package/why-prices-are-deployment-owned:
+  en: 95fc674bfa16245c
+  zh: b69143b45d45c9bd
+/deepseek-ai-dsh-team-model-routing/use-this-package/what-the-policy-decides:
+  en: a6e01e154003fcc3
+  zh: 6dce07f0e77b3866
+/deepseek-ai-dsh-team-model-routing/use-this-package/when-to-choose-it:
+  en: 2403a67250728412
+  zh: 39d2434e89b30234
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation:
+  en: 42b15ac6321706aa
+  zh: f105efaee8e3f260
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/design-philosophy:
+  en: 2778eb8153ca0c2b
+  zh: 5fb119cf56bc79ad
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/source-map:
+  en: 29429ac4e2207676
+  zh: ba47723382b532fa
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/team-mode-detection:
+  en: cd3c2f92bfacc4f4
+  zh: dfe1461b0f2ef8fa
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/session-route-resolution:
+  en: 854b1fdc3b2dd48f
+  zh: e6d0c262eff22663
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/price-ordering:
+  en: d7e5eea38fcb3080
+  zh: 79a24dc700944d76
+/deepseek-ai-dsh-team-model-routing/understand-the-implementation/authorization-follows-the-price-table:
+  en: a00b5b8252fab6f9
+  zh: 8ce6b34ef89a5b17
+/deepseek-ai-dsh-team-model-routing/further-exploration:
+  en: f5955f6f27869eeb
+  zh: 9d746a2bf353c1b1
+/deepseek-ai-dsh-team-model-routing/model-experience:
+  en: 215e7ba838619b7b
+  zh: 215e7ba838619b7b
+/deepseek-ai-dsh-team-model-routing/model-experience/team-routing-guidance:
+  en: 7f131490fb984262
+  zh: 22acc3795a9009d7
+/deepseek-ai-dsh-team-model-routing/model-experience/team-routing-guidance/what-the-model-sees:
+  en: af94bca8b08383f3
+  zh: 802a48fad83d9a72
+/deepseek-ai-dsh-team-model-routing/model-experience/team-routing-guidance/what-the-model-sees/the-routing-context:
+  en: 09ff0935a8b07d1b
+  zh: f58bb6256c82b14a
+/deepseek-ai-dsh-team-model-routing/model-experience/team-routing-guidance/token-effect:
+  en: 582398549999b896
+  zh: b1376bd8eb64dbc8
+/deepseek-ai-dsh-team-model-routing/model-experience/team-routing-guidance/kv-cache-effect:
+  en: 96ab18bcf20e3e67
+  zh: cdb107798aa7df77
+/deepseek-ai-dsh-team-model-routing/known-limitations-and-deferred-work:
+  en: a59dc64c13683ed9
+  zh: 211261b41ae0b848

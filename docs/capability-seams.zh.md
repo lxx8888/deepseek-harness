@@ -282,6 +282,8 @@ flowchart LR
   pkg_agent_team["agent-team"]
   svc_agentTeams["ctx.agentTeams<br/>Agent Teams coordination domain"]
   pkg_tool_agent_team["tool-agent-team"]
+  pkg_team_model_routing["team-model-routing"]
+  svc_teamModelRouting["ctx.teamModelRouting<br/>Team-mode model routing policy"]
   pkg_experimental_claude_code_mods["experimental-claude-code-mods"]
   svc_claudeCodeMods["ctx.claudeCodeMods<br/>Claude Code mods bridge"]
   pkg_inspector["inspector"]
@@ -476,6 +478,7 @@ flowchart LR
   pkg_subprocess_local --> svc_subprocess
   pkg_subprocess_ssh --> svc_subprocess
   pkg_system_prompt --> svc_systemPrompt
+  pkg_team_model_routing --> svc_teamModelRouting
   pkg_terminal --> svc_terminals
   pkg_terminal_bash --> svc_terminals
   pkg_terminal_panel --> svc_terminals
@@ -630,6 +633,7 @@ flowchart LR
   svc_systemPrompt --> pkg_tool_terminal
   svc_systemPrompt --> pkg_tool_web
   svc_systemPrompt --> pkg_tools
+  svc_teamModelRouting --> pkg_tool_agent_team
   svc_terminals --> pkg_tool_terminal
   svc_tokenMeter --> pkg_compaction_basic
   svc_toolResultPruner --> pkg_compaction_basic
@@ -767,6 +771,7 @@ flowchart LR
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/experimental/tool-ralph) | - | 提供方准备本地子级或执行外部任务；一个 activation 管理器持有两类生命周期。委派工具选择后端，控制工具投递本地后续消息，工作流等待 activation 结果。 |
 | `ctx.speechToText` | `seam` | [`experimental-speech-to-text`](../packages/experimental/speech-to-text) | [`experimental-speech-to-text-sensevoice`](../packages/experimental/speech-to-text-sensevoice) | [`experimental-api-speech-to-text`](../packages/experimental/api-speech-to-text) | - | 路由显式选择的识别器；浏览器使用带认证的 Remote，并在提交前将转写保留在草稿中。 |
 | `ctx.agentTeams` | `core` | [`agent-team`](../packages/team/agent-team) | - | [`tool-agent-team`](../packages/team/tool-agent-team) | - | 负责子代理树共享的任务 DAG；tool-agent-team 提供任务控制工具。 |
+| `ctx.teamModelRouting` | `core` | [`team-model-routing`](../packages/team/team-model-routing) | - | [`tool-agent-team`](../packages/team/tool-agent-team) | - | 负责部署方声明的模型价格、决策节点路由，以及 Team 模式把工作路由到的批量工作路由；委派工具从中读取「子代理必须显式指定路由」的要求。 |
 | `ctx.claudeCodeMods` | `core` | [`experimental-claude-code-mods`](../packages/experimental/claude-code-mods) | - | - | - | 加载 defineMod 插件添加的模组，从 harness 扩展点触发其钩子链，并通过其 Remote 绘制提示框上方的横幅。 |
 | `ctx.inspector` | `core` | `inspector` | - | - | - | 负责 Worker 托管的 CDP target，以及独立于传输的 Host 和 Client observation 与 Cordis tree query API。 |
 | `ctx.jobs` | `seam` | [`jobs`](../packages/jobs/jobs) | [`jobs-local`](../packages/jobs/jobs-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-pwsh`](../packages/shell/tool-pwsh), [`tool-terminal`](../packages/experimental/tool-terminal), [`tool-jobs`](../packages/jobs/tool-jobs), [`api-job-controller`](../packages/api/job-controller) | - | 生产方（后台 bash/pwsh 与 PTY 发送）登记正在运行的工作；声明 record 的 job 还为非消费观察者流式提供原始输出；tool-jobs 是面向模型的控制器，用于读取、列出和终止这些工作；jobs-local 是进程本地注册表。 |
